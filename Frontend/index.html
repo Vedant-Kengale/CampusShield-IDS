@@ -1,0 +1,1452 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusShield IDS | Campus Network Threat Monitor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              cyber: {
+                900: "#0B0F19",
+                800: "#111827",
+                700: "#1F2937",
+                card: "rgba(17, 24, 39, 0.75)",
+                accent: "#06B6D4",
+                danger: "#F43F5E",
+                success: "#10B981",
+                warning: "#F59E0B",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <!-- FontAwesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background-color: #070a12;
+        color: #f3f4f6;
+        overflow-x: hidden;
+      }
+      .font-mono-code {
+        font-family: "JetBrains Mono", monospace;
+      }
+      .glass-panel {
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .glass-panel-glow {
+        box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.15);
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.6);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(6, 182, 212, 0.3);
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(6, 182, 212, 0.6);
+      }
+      @keyframes pulse-red {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+        }
+        50% {
+          box-shadow: 0 0 0 10px rgba(244, 63, 94, 0);
+        }
+      }
+      .threat-pulse {
+        animation: pulse-red 2s infinite;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col custom-scrollbar">
+    <header
+      class="sticky top-0 z-40 border-b border-gray-800/80 glass-panel px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20"
+        >
+          <i class="fa-solid fa-shield-halved text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg text-white tracking-wide">
+              CampusShield
+              <span class="text-cyan-400 font-mono-code text-sm">v2.4 IDS</span>
+            </h1>
+            <span
+              class="px-2 py-0.5 text-xs rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono-code"
+              >CNS Unit 3 Active</span
+            >
+          </div>
+          <p class="text-xs text-gray-400">
+            Cryptographically Secured Intrusion Detection & Subnet Monitor
+          </p>
+        </div>
+      </div>
+
+      <!-- Top Right Indicators -->
+      <div class="flex items-center gap-4 flex-wrap">
+        <div
+          class="flex items-center gap-2 bg-gray-900/80 border border-gray-800 px-3 py-1.5 rounded-lg text-xs"
+        >
+          <i class="fa-solid fa-network-wired text-cyan-400"></i>
+          <span class="text-gray-400">Subnet:</span>
+          <span class="font-mono-code text-white font-semibold"
+            >10.20.0.0/16</span
+          >
+        </div>
+        <div
+          class="flex items-center gap-2 bg-gray-900/80 border border-gray-800 px-3 py-1.5 rounded-lg text-xs"
+        >
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-gray-400">Engine:</span>
+          <span class="text-emerald-400 font-semibold">ONLINE</span>
+        </div>
+        <a
+          href="#hmac-section"
+          class="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-semibold transition flex items-center gap-2"
+        >
+          <i class="fa-solid fa-key"></i> HMAC Auditor
+        </a>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 lg:p-6 space-y-6 max-w-[1700px] w-full mx-auto">
+      <!-- KPI Cards Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <!-- Total Devices -->
+        <div
+          class="glass-panel p-4 rounded-xl border-l-4 border-l-cyan-500 flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold">
+              Total Monitored
+            </p>
+            <p
+              class="text-2xl font-bold font-mono-code text-white mt-1"
+              id="stat-total"
+            >
+              0
+            </p>
+          </div>
+          <div
+            class="w-10 h-10 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-laptop-code text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Valid Devices (Green) -->
+        <div
+          class="glass-panel p-4 rounded-xl border-l-4 border-l-emerald-500 flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold">
+              Valid Devices
+            </p>
+            <p
+              class="text-2xl font-bold font-mono-code text-emerald-400 mt-1"
+              id="stat-valid"
+            >
+              0
+            </p>
+          </div>
+          <div
+            class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-circle-check text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Threat Devices (Red) -->
+        <div
+          class="glass-panel p-4 rounded-xl border-l-4 border-l-rose-500 flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold">
+              Threat Devices
+            </p>
+            <p
+              class="text-2xl font-bold font-mono-code text-rose-400 mt-1"
+              id="stat-threat"
+            >
+              0
+            </p>
+          </div>
+          <div
+            class="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Blocked / Quarantined -->
+        <div
+          class="glass-panel p-4 rounded-xl border-l-4 border-l-gray-500 flex items-center justify-between"
+        >
+          <div>
+            <p class="text-xs text-gray-400 uppercase font-semibold">
+              Purged / Isolated
+            </p>
+            <p
+              class="text-2xl font-bold font-mono-code text-gray-300 mt-1"
+              id="stat-blocked"
+            >
+              0
+            </p>
+          </div>
+          <div
+            class="w-10 h-10 rounded-lg bg-gray-500/10 text-gray-400 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-ban text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Auto-Purge Timer Controller -->
+        <div
+          class="glass-panel p-4 rounded-xl border-l-4 border-l-amber-500 col-span-2 md:col-span-1 flex flex-col justify-between"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate text-amber-400 text-xs"></i>
+              <span class="text-xs font-semibold text-gray-300"
+                >10s Auto-Sweep</span
+              >
+            </div>
+            <!-- Toggle Switch -->
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="autopurge-toggle"
+                class="sr-only peer"
+                checked
+              />
+              <div
+                class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"
+              ></div>
+            </label>
+          </div>
+
+          <!-- Countdown Visual Bar -->
+          <div class="mt-2">
+            <div
+              class="flex justify-between text-[10px] font-mono-code text-gray-400 mb-1"
+            >
+              <span>Next Purge Sweep:</span>
+              <span id="timer-text" class="text-amber-400 font-bold"
+                >10.0s</span
+              >
+            </div>
+            <div class="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div
+                id="timer-bar"
+                class="h-full bg-gradient-to-r from-amber-500 to-rose-500 transition-all duration-100 ease-linear"
+                style="width: 100%"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Column: Topology Map + Attack Controls (7 Cols) -->
+        <div class="lg:col-span-7 space-y-6">
+          <!-- Network Topology Canvas Card -->
+          <div
+            class="glass-panel glass-panel-glow rounded-2xl p-5 border border-gray-800 flex flex-col relative"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2
+                  class="text-base font-bold text-white flex items-center gap-2"
+                >
+                  <i class="fa-solid fa-diagram-project text-cyan-400"></i>
+                  Interactive Campus Topology Map
+                </h2>
+                <p class="text-xs text-gray-400">
+                  Live network nodes and animated packet links. Click any device
+                  to inspect security profile.
+                </p>
+              </div>
+              <div class="flex items-center gap-3 text-xs">
+                <span class="flex items-center gap-1.5"
+                  ><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  Valid</span
+                >
+                <span class="flex items-center gap-1.5"
+                  ><span
+                    class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"
+                  ></span>
+                  Threat</span
+                >
+                <span class="flex items-center gap-1.5"
+                  ><span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+                  Purged</span
+                >
+              </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div
+              class="relative w-full h-[410px] bg-slate-950/80 rounded-xl overflow-hidden border border-gray-800/80"
+            >
+              <canvas
+                id="topologyCanvas"
+                class="w-full h-full cursor-pointer"
+              ></canvas>
+
+              <!-- Overlay Legend / Tooltip info -->
+              <div
+                class="absolute bottom-3 left-3 bg-gray-900/90 border border-gray-800 rounded-lg px-3 py-1.5 text-[11px] font-mono-code text-gray-400 backdrop-blur flex items-center gap-3"
+              >
+                <span
+                  ><i class="fa-solid fa-circle-info text-cyan-400"></i> Hover /
+                  Click host node</span
+                >
+                <span class="text-gray-600">|</span>
+                <span id="canvas-status"
+                  >Status: Normal Network Operations</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-panel rounded-2xl p-5 border border-gray-800">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3
+                  class="text-sm font-bold text-white flex items-center gap-2"
+                >
+                  <i class="fa-solid fa-flask text-amber-400"></i> Multi-Layer
+                  Threat Simulator
+                </h3>
+                <p class="text-xs text-gray-400">
+                  Inject real-time attacks to test detection engines and 10s
+                  auto-purge logic.
+                </p>
+              </div>
+              <span
+                class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold"
+                >Interactive Sandbox</span
+              >
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <button
+                onclick="injectAttack('PORT_SCAN')"
+                class="p-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold flex flex-col items-start gap-1 transition group"
+              >
+                <span class="flex items-center gap-1.5 font-bold"
+                  ><i class="fa-solid fa-bolt text-rose-400"></i> Port Scan
+                  (L4)</span
+                >
+                <span class="text-[10px] text-gray-400 font-normal"
+                  >Sliding Window SYN Probes</span
+                >
+              </button>
+
+              <button
+                onclick="injectAttack('BRUTE_FORCE')"
+                class="p-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold flex flex-col items-start gap-1 transition group"
+              >
+                <span class="flex items-center gap-1.5 font-bold"
+                  ><i class="fa-solid fa-key text-amber-400"></i> SSH Brute
+                  Force (L7)</span
+                >
+                <span class="text-[10px] text-gray-400 font-normal"
+                  >Login Failure Velocity</span
+                >
+              </button>
+
+              <button
+                onclick="injectAttack('ML_ANOMALY')"
+                class="p-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold flex flex-col items-start gap-1 transition group"
+              >
+                <span class="flex items-center gap-1.5 font-bold"
+                  ><i class="fa-solid fa-robot text-purple-400"></i> ML Flow
+                  Anomaly</span
+                >
+                <span class="text-[10px] text-gray-400 font-normal"
+                  >Isolation Forest Bandwidth</span
+                >
+              </button>
+
+              <button
+                onclick="addValidDevice()"
+                class="p-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex flex-col items-start gap-1 transition"
+              >
+                <span class="flex items-center gap-1.5 font-bold"
+                  ><i class="fa-solid fa-plus text-emerald-400"></i> Spawn Valid
+                  Host</span
+                >
+                <span class="text-[10px] text-gray-400 font-normal"
+                  >Normal Student Device</span
+                >
+              </button>
+
+              <button
+                onclick="triggerManualSweep()"
+                class="p-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex flex-col items-start gap-1 transition"
+              >
+                <span class="flex items-center gap-1.5 font-bold"
+                  ><i class="fa-solid fa-broom text-cyan-400"></i> Force Instant
+                  Sweep</span
+                >
+                <span class="text-[10px] text-gray-400 font-normal"
+                  >Purge Red Devices Now</span
+                >
+              </button>
+
+              <button
+                onclick="resetBaseline()"
+                class="p-3 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-semibold flex flex-col items-start gap-1 transition"
+              >
+                <span class="flex items-center gap-1.5 font-bold"
+                  ><i class="fa-solid fa-rotate-left text-gray-400"></i> Reset
+                  Network</span
+                >
+                <span class="text-[10px] text-gray-400 font-normal"
+                  >Restore Clean State</span
+                >
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-6">
+          <!-- Live Threat Analytics Charts -->
+          <div
+            class="glass-panel rounded-2xl p-5 border border-gray-800 space-y-4"
+          >
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-cyan-400"></i> Live
+                Network Analytics
+              </h3>
+              <span class="text-[11px] font-mono-code text-gray-400"
+                >Real-Time Metrics</span
+              >
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Traffic Velocity Chart -->
+              <div
+                class="bg-gray-950/60 p-3 rounded-xl border border-gray-800/80"
+              >
+                <p class="text-[11px] text-gray-400 mb-2 font-semibold">
+                  Packet Rate (Pkts/sec)
+                </p>
+                <div class="h-36">
+                  <canvas id="trafficChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Incident Breakdown Chart -->
+              <div
+                class="bg-gray-950/60 p-3 rounded-xl border border-gray-800/80"
+              >
+                <p class="text-[11px] text-gray-400 mb-2 font-semibold">
+                  Threat Vector Split
+                </p>
+                <div class="h-36 flex items-center justify-center">
+                  <canvas id="threatPieChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HMAC Cryptographic Audit Log Engine (CNS Unit 3) -->
+          <div
+            id="hmac-section"
+            class="glass-panel rounded-2xl p-5 border border-gray-800 space-y-3"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3
+                  class="text-sm font-bold text-white flex items-center gap-2"
+                >
+                  <i class="fa-solid fa-fingerprint text-emerald-400"></i>
+                  Cryptographic Audit Log
+                </h3>
+                <p class="text-[11px] text-gray-400">
+                  HMAC-SHA256 signature calculated for every alert (CNS Unit 3).
+                </p>
+              </div>
+
+              <!-- Anti-Tamper Test Controls -->
+              <div class="flex items-center gap-2">
+                <button
+                  onclick="tamperFirstLog()"
+                  class="px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[11px] font-semibold transition"
+                >
+                  <i class="fa-solid fa-bug"></i> Tamper Log
+                </button>
+                <button
+                  onclick="verifyHmacIntegrity()"
+                  class="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold transition"
+                >
+                  <i class="fa-solid fa-shield-check"></i> Verify Integrity
+                </button>
+              </div>
+            </div>
+
+            <!-- Audit Log List Container -->
+            <div
+              id="audit-log-container"
+              class="h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs"
+            >
+              <!-- Log items injected via JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="deviceModal"
+      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4"
+    >
+      <div
+        class="glass-panel border border-gray-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative space-y-4"
+      >
+        <!-- Close Button -->
+        <button
+          onclick="closeDeviceModal()"
+          class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Modal Header -->
+        <div class="flex items-center gap-3">
+          <div
+            id="modal-icon-bg"
+            class="w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white"
+          >
+            <i id="modal-icon" class="fa-solid fa-laptop"></i>
+          </div>
+          <div>
+            <h3
+              id="modal-ip"
+              class="text-lg font-bold font-mono-code text-white"
+            >
+              10.20.1.45
+            </h3>
+            <p id="modal-subnet" class="text-xs text-gray-400">
+              CS Dept Lab Subnet
+            </p>
+          </div>
+        </div>
+
+        <hr class="border-gray-800" />
+
+        <!-- Device Properties Grid -->
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="bg-gray-950/60 p-3 rounded-lg border border-gray-800">
+            <span class="text-gray-400 block mb-0.5">MAC Address</span>
+            <span
+              id="modal-mac"
+              class="font-mono-code font-semibold text-gray-200"
+              >00:1A:2B:3C:4D:5E</span
+            >
+          </div>
+          <div class="bg-gray-950/60 p-3 rounded-lg border border-gray-800">
+            <span class="text-gray-400 block mb-0.5">Current Status</span>
+            <span id="modal-status" class="font-bold">VALID (GREEN)</span>
+          </div>
+        </div>
+
+        <!-- Threat Score Gauge -->
+        <div
+          class="bg-gray-950/60 p-4 rounded-xl border border-gray-800 space-y-2"
+        >
+          <div class="flex justify-between text-xs">
+            <span class="text-gray-300 font-semibold">Threat Risk Score:</span>
+            <span id="modal-score-text" class="font-bold font-mono-code"
+              >15 / 100</span
+            >
+          </div>
+          <div class="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div
+              id="modal-score-bar"
+              class="h-full bg-emerald-500 transition-all duration-300"
+              style="width: 15%"
+            ></div>
+          </div>
+          <p id="modal-score-desc" class="text-[10px] text-gray-400">
+            Low risk profile. Normal background netflow detected.
+          </p>
+        </div>
+
+        <!-- Triggered Rules & Logs -->
+        <div class="space-y-1">
+          <span class="text-xs font-semibold text-gray-300 block"
+            >Triggered Rule Violations:</span
+          >
+          <div
+            id="modal-triggers"
+            class="bg-gray-950/60 p-3 rounded-lg border border-gray-800 text-xs font-mono-code text-gray-300 min-h-[60px] max-h-[100px] overflow-y-auto"
+          >
+            None recorded.
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button
+            onclick="closeDeviceModal()"
+            class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold transition"
+          >
+            Close
+          </button>
+          <button
+            id="modal-block-btn"
+            onclick="manualBlockFromModal()"
+            class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition flex items-center gap-2"
+          >
+            <i class="fa-solid fa-ban"></i> Disconnect / Block IP
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer
+      class="border-t border-gray-800/80 glass-panel py-3 px-6 text-center text-xs text-gray-500"
+    >
+      CampusShield IDS Demo | Integrated Cryptographic & Network Intrusion
+      Detection System
+    </footer>
+
+    <script>
+      // State Management
+      const STATE = {
+        subnet: "10.20.0.0/16",
+        autoPurge: true,
+        timerSeconds: 10.0,
+        timerMax: 10.0,
+        selectedDeviceId: null,
+        hmacSecret: "CampusShield_CNS_Secret_Key_2026",
+
+        // Subnets definitions
+        subnets: [
+          { id: "cs", name: "CS Dept Lab", color: "#06b6d4" },
+          { id: "lib", name: "Library Wi-Fi", color: "#3b82f6" },
+          { id: "admin", name: "Admin Building", color: "#8b5cf6" },
+          { id: "hostel", name: "Hostel Subnet", color: "#ec4899" },
+        ],
+
+        // Active devices list
+        devices: [],
+
+        // Cryptographic Audit Logs
+        logs: [],
+
+        // Chart data counters
+        threatCounts: {
+          PORT_SCAN: 0,
+          BRUTE_FORCE: 0,
+          ML_ANOMALY: 0,
+        },
+        trafficHistory: [12, 18, 15, 22, 19, 25, 20, 30, 24, 28],
+      };
+
+      // DOM Element Cache
+      const DOM = {
+        statTotal: document.getElementById("stat-total"),
+        statValid: document.getElementById("stat-valid"),
+        statThreat: document.getElementById("stat-threat"),
+        statBlocked: document.getElementById("stat-blocked"),
+        autopurgeToggle: document.getElementById("autopurge-toggle"),
+        timerBar: document.getElementById("timer-bar"),
+        timerText: document.getElementById("timer-text"),
+        auditLogContainer: document.getElementById("audit-log-container"),
+        canvasStatus: document.getElementById("canvas-status"),
+
+        // Modal
+        deviceModal: document.getElementById("deviceModal"),
+        modalIp: document.getElementById("modal-ip"),
+        modalSubnet: document.getElementById("modal-subnet"),
+        modalMac: document.getElementById("modal-mac"),
+        modalStatus: document.getElementById("modal-status"),
+        modalScoreText: document.getElementById("modal-score-text"),
+        modalScoreBar: document.getElementById("modal-score-bar"),
+        modalScoreDesc: document.getElementById("modal-score-desc"),
+        modalTriggers: document.getElementById("modal-triggers"),
+        modalIconBg: document.getElementById("modal-icon-bg"),
+        modalIcon: document.getElementById("modal-icon"),
+        modalBlockBtn: document.getElementById("modal-block-btn"),
+      };
+
+      async function calculateHMAC(message, secret = STATE.hmacSecret) {
+        try {
+          const encoder = new TextEncoder();
+          const keyData = encoder.encode(secret);
+          const messageData = encoder.encode(message);
+
+          const cryptoKey = await crypto.subtle.importKey(
+            "raw",
+            keyData,
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["sign"],
+          );
+
+          const signature = await crypto.subtle.sign(
+            "HMAC",
+            cryptoKey,
+            messageData,
+          );
+          return Array.from(new Uint8Array(signature))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+        } catch (e) {
+          // Fallback hash function
+          let hash = 0;
+          for (let i = 0; i < message.length; i++) {
+            hash = (hash << 5) - hash + message.charCodeAt(i);
+            hash |= 0;
+          }
+          return "hmac_sha256_" + Math.abs(hash).toString(16) + "e49f82";
+        }
+      }
+
+      function initInitialDevices() {
+        STATE.devices = [
+          {
+            id: "dev-1",
+            ip: "10.20.1.12",
+            mac: "00:1A:2B:4F:91:01",
+            subnet: "CS Dept Lab",
+            threatScore: 5,
+            status: "GREEN",
+            triggers: [],
+            x: 0,
+            y: 0,
+          },
+          {
+            id: "dev-2",
+            ip: "10.20.1.45",
+            mac: "00:1A:2B:88:C2:14",
+            subnet: "CS Dept Lab",
+            threatScore: 12,
+            status: "GREEN",
+            triggers: [],
+            x: 0,
+            y: 0,
+          },
+          {
+            id: "dev-3",
+            ip: "10.20.2.89",
+            mac: "00:1A:2B:11:34:55",
+            subnet: "Library Wi-Fi",
+            threatScore: 8,
+            status: "GREEN",
+            triggers: [],
+            x: 0,
+            y: 0,
+          },
+          {
+            id: "dev-4",
+            ip: "10.20.2.102",
+            mac: "00:1A:2B:90:AA:FE",
+            subnet: "Library Wi-Fi",
+            threatScore: 18,
+            status: "GREEN",
+            triggers: [],
+            x: 0,
+            y: 0,
+          },
+          {
+            id: "dev-5",
+            ip: "10.20.3.15",
+            mac: "00:1A:2B:77:88:99",
+            subnet: "Admin Building",
+            threatScore: 2,
+            status: "GREEN",
+            triggers: [],
+            x: 0,
+            y: 0,
+          },
+          {
+            id: "dev-6",
+            ip: "10.20.4.50",
+            mac: "00:1A:2B:33:22:11",
+            subnet: "Hostel Subnet",
+            threatScore: 10,
+            status: "GREEN",
+            triggers: [],
+            x: 0,
+            y: 0,
+          },
+        ];
+
+        addAuditLog(
+          "SYSTEM_INIT",
+          "10.20.0.1",
+          "CampusShield Engine initialized cleanly. Baseline active.",
+          "LOW",
+        );
+        updateMetrics();
+      }
+
+      async function addAuditLog(eventType, ip, desc, severity = "LOW") {
+        const timestamp = new Date().toLocaleTimeString();
+        const logText = `[${timestamp}] ${eventType} | IP: ${ip} | ${desc}`;
+        const signature = await calculateHMAC(logText);
+
+        const logEntry = {
+          id:
+            "log-" +
+            Date.now() +
+            "-" +
+            Math.random().toString(36).substring(2, 5),
+          timestamp,
+          eventType,
+          ip,
+          desc,
+          logText,
+          hmac: signature,
+          tampered: false,
+          severity,
+        };
+
+        STATE.logs.unshift(logEntry);
+        if (STATE.logs.length > 30) STATE.logs.pop();
+        renderAuditLogs();
+      }
+
+      function renderAuditLogs() {
+        DOM.auditLogContainer.innerHTML = "";
+
+        STATE.logs.forEach((log) => {
+          const item = document.createElement("div");
+          item.className = `p-2.5 rounded-lg border transition ${
+            log.tampered
+              ? "bg-rose-950/80 border-rose-500 text-rose-200 animate-pulse"
+              : log.severity === "CRITICAL" || log.severity === "HIGH"
+                ? "bg-rose-950/30 border-rose-800/60 text-gray-200"
+                : "bg-gray-950/60 border-gray-800/80 text-gray-300"
+          }`;
+
+          const sevColor =
+            log.severity === "CRITICAL"
+              ? "bg-rose-500 text-white"
+              : log.severity === "HIGH"
+                ? "bg-amber-500 text-black"
+                : "bg-cyan-900 text-cyan-200";
+
+          item.innerHTML = `
+                    <div class="flex items-center justify-between font-mono-code text-[11px] mb-1">
+                        <span class="text-gray-400"><i class="fa-regular fa-clock text-gray-500"></i> ${log.timestamp}</span>
+                        <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${sevColor}">${log.severity}</span>
+                    </div>
+                    <p class="font-semibold text-[11px] mb-1 ${log.tampered ? "text-rose-300 underline" : "text-gray-200"}">
+                        ${log.desc}
+                    </p>
+                    <div class="flex items-center justify-between text-[10px] font-mono-code text-gray-500 pt-1 border-t border-gray-800/50">
+                        <span class="truncate max-w-[220px]">HMAC: <span class="${log.tampered ? "text-rose-400 font-bold" : "text-emerald-400/80"}">${log.hmac.substring(0, 18)}...</span></span>
+                        <span>${log.tampered ? '<span class="text-rose-400 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> TAMPERED</span>' : '<span class="text-emerald-400"><i class="fa-solid fa-check"></i> SIGNED</span>'}</span>
+                    </div>
+                `;
+          DOM.auditLogContainer.appendChild(item);
+        });
+      }
+
+      function tamperFirstLog() {
+        if (STATE.logs.length === 0) return;
+        STATE.logs[0].desc += " [MODIFIED BY ATTACKER UNTRANSACTED]";
+        STATE.logs[0].logText += " [MODIFIED BY ATTACKER UNTRANSACTED]";
+        renderAuditLogs();
+        alert(
+          "⚠️ Anti-Tamper Simulation: A log entry text was altered in memory without updating its HMAC-SHA256 signature. Click 'Verify Integrity' to trigger cryptographic detection!",
+        );
+      }
+
+      async function verifyHmacIntegrity() {
+        let tamperedCount = 0;
+        for (let log of STATE.logs) {
+          const recalculatedHmac = await calculateHMAC(log.logText);
+          if (recalculatedHmac !== log.hmac) {
+            log.tampered = true;
+            tamperedCount++;
+          } else {
+            log.tampered = false;
+          }
+        }
+        renderAuditLogs();
+
+        if (tamperedCount > 0) {
+          alert(
+            `🚨 CRYPTOGRAPHIC ALERT: ${tamperedCount} tampered log entry detected! Hash signature mismatch identified.`,
+          );
+        } else {
+          alert(
+            "✅ Cryptographic Verification Complete: All log signatures are 100% authentic and verified.",
+          );
+        }
+      }
+
+      let trafficChart, threatPieChart;
+
+      function initCharts() {
+        const ctxTraffic = document
+          .getElementById("trafficChart")
+          .getContext("2d");
+        trafficChart = new Chart(ctxTraffic, {
+          type: "line",
+          data: {
+            labels: Array(10).fill(""),
+            datasets: [
+              {
+                data: STATE.trafficHistory,
+                borderColor: "#06b6d4",
+                backgroundColor: "rgba(6, 182, 212, 0.1)",
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { display: false },
+              y: {
+                grid: { color: "rgba(255,255,255,0.05)" },
+                ticks: { color: "#9ca3af", font: { size: 9 } },
+              },
+            },
+          },
+        });
+
+        const ctxPie = document
+          .getElementById("threatPieChart")
+          .getContext("2d");
+        threatPieChart = new Chart(ctxPie, {
+          type: "doughnut",
+          data: {
+            labels: ["Port Scan (L4)", "Brute Force (L7)", "ML Anomaly"],
+            datasets: [
+              {
+                data: [1, 1, 1],
+                backgroundColor: ["#f43f5e", "#f59e0b", "#a855f7"],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            cutout: "70%",
+          },
+        });
+      }
+
+      function updateCharts() {
+        if (!trafficChart || !threatPieChart) return;
+
+        const activeCount = STATE.devices.filter(
+          (d) => d.status !== "BLOCKED",
+        ).length;
+        const newRate = Math.floor(Math.random() * 10) + activeCount * 4;
+        STATE.trafficHistory.shift();
+        STATE.trafficHistory.push(newRate);
+        trafficChart.data.datasets[0].data = STATE.trafficHistory;
+        trafficChart.update("none");
+
+        const { PORT_SCAN, BRUTE_FORCE, ML_ANOMALY } = STATE.threatCounts;
+        const totalThreats = PORT_SCAN + BRUTE_FORCE + ML_ANOMALY;
+        if (totalThreats > 0) {
+          threatPieChart.data.datasets[0].data = [
+            PORT_SCAN,
+            BRUTE_FORCE,
+            ML_ANOMALY,
+          ];
+        } else {
+          threatPieChart.data.datasets[0].data = [1, 1, 1];
+        }
+        threatPieChart.update("none");
+      }
+
+      const canvas = document.getElementById("topologyCanvas");
+      const ctx = canvas.getContext("2d");
+      let particles = [];
+
+      function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+
+      function calculateNodePositions() {
+        if (!canvas.width || !canvas.height) return;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        STATE.gateway = {
+          x: centerX,
+          y: centerY,
+          name: "Campus Core Router",
+          ip: "10.20.0.1",
+        };
+
+        const subRadius = Math.min(canvas.width, canvas.height) * 0.28;
+        STATE.subnets.forEach((sub, idx) => {
+          const angle =
+            idx * ((2 * Math.PI) / STATE.subnets.length) - Math.PI / 4;
+          sub.x = centerX + subRadius * Math.cos(angle);
+          sub.y = centerY + subRadius * Math.sin(angle);
+        });
+
+        STATE.subnets.forEach((sub) => {
+          const subDevices = STATE.devices.filter((d) => d.subnet === sub.name);
+          subDevices.forEach((dev, idx) => {
+            const devRadius = 55;
+            const angle =
+              idx * ((2 * Math.PI) / Math.max(1, subDevices.length)) +
+              Date.now() * 0.0002;
+            dev.x = sub.x + devRadius * Math.cos(angle);
+            dev.y = sub.y + devRadius * Math.sin(angle);
+          });
+        });
+      }
+
+      function drawTopology() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        calculateNodePositions();
+
+        // Draw Links: Subnets to Gateway
+        STATE.subnets.forEach((sub) => {
+          ctx.beginPath();
+          ctx.moveTo(STATE.gateway.x, STATE.gateway.y);
+          ctx.lineTo(sub.x, sub.y);
+          ctx.strokeStyle = "rgba(6, 182, 212, 0.25)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        });
+
+        // Draw Links: Devices to Subnets
+        STATE.devices.forEach((dev) => {
+          const parentSub = STATE.subnets.find((s) => s.name === dev.subnet);
+          if (parentSub) {
+            ctx.beginPath();
+            ctx.moveTo(parentSub.x, parentSub.y);
+            ctx.lineTo(dev.x, dev.y);
+
+            if (dev.status === "RED") {
+              ctx.strokeStyle = "rgba(244, 63, 94, 0.6)";
+              ctx.lineWidth = 2;
+            } else if (dev.status === "BLOCKED") {
+              ctx.strokeStyle = "rgba(107, 114, 128, 0.2)";
+              ctx.lineWidth = 1;
+            } else {
+              ctx.strokeStyle = "rgba(16, 185, 129, 0.3)";
+              ctx.lineWidth = 1.5;
+            }
+            ctx.stroke();
+          }
+        });
+
+        // Spawn Animated Flow Particles
+        if (Math.random() < 0.3 && STATE.devices.length > 0) {
+          const activeDevs = STATE.devices.filter(
+            (d) => d.status !== "BLOCKED",
+          );
+          if (activeDevs.length > 0) {
+            const randomDev =
+              activeDevs[Math.floor(Math.random() * activeDevs.length)];
+            const parentSub = STATE.subnets.find(
+              (s) => s.name === randomDev.subnet,
+            );
+            if (parentSub) {
+              particles.push({
+                x: randomDev.x,
+                y: randomDev.y,
+                targetX: parentSub.x,
+                targetY: parentSub.y,
+                progress: 0,
+                speed: 0.02 + Math.random() * 0.02,
+                color: randomDev.status === "RED" ? "#f43f5e" : "#06b6d4",
+              });
+            }
+          }
+        }
+
+        // Render particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.progress += p.speed;
+          const curX = p.x + (p.targetX - p.x) * p.progress;
+          const curY = p.y + (p.targetY - p.y) * p.progress;
+
+          ctx.beginPath();
+          ctx.arc(curX, curY, 3, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+
+          if (p.progress >= 1) {
+            particles.splice(i, 1);
+          }
+        }
+
+        // Draw Core Gateway
+        ctx.beginPath();
+        ctx.arc(STATE.gateway.x, STATE.gateway.y, 20, 0, Math.PI * 2);
+        ctx.fillStyle = "#0f172a";
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#06b6d4";
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 10px Plus Jakarta Sans";
+        ctx.textAlign = "center";
+        ctx.fillText("CORE GATEWAY", STATE.gateway.x, STATE.gateway.y + 32);
+
+        // Draw Subnet Hubs
+        STATE.subnets.forEach((sub) => {
+          ctx.beginPath();
+          ctx.arc(sub.x, sub.y, 14, 0, Math.PI * 2);
+          ctx.fillStyle = "#1e293b";
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = sub.color;
+          ctx.stroke();
+
+          ctx.fillStyle = "#9ca3af";
+          ctx.font = "10px Plus Jakarta Sans";
+          ctx.fillText(sub.name, sub.x, sub.y + 24);
+        });
+
+        // Draw Device Nodes
+        STATE.devices.forEach((dev) => {
+          if (dev.status === "RED") {
+            const pulseSize = 16 + Math.sin(Date.now() * 0.008) * 6;
+            ctx.beginPath();
+            ctx.arc(dev.x, dev.y, pulseSize, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(244, 63, 94, 0.25)";
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(dev.x, dev.y, 10, 0, Math.PI * 2);
+
+          if (dev.status === "RED") {
+            ctx.fillStyle = "#f43f5e";
+            ctx.strokeStyle = "#ffffff";
+          } else if (dev.status === "BLOCKED") {
+            ctx.fillStyle = "#4b5563";
+            ctx.strokeStyle = "#1f2937";
+          } else {
+            ctx.fillStyle = "#10b981";
+            ctx.strokeStyle = "#064e3b";
+          }
+          ctx.lineWidth = 2;
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = dev.status === "BLOCKED" ? "#6b7280" : "#e5e7eb";
+          ctx.font = "9px JetBrains Mono";
+          ctx.fillText(dev.ip.replace("10.20.", "."), dev.x, dev.y - 14);
+        });
+
+        requestAnimationFrame(drawTopology);
+      }
+
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        const clickedDev = STATE.devices.find((dev) => {
+          const dist = Math.hypot(dev.x - clickX, dev.y - clickY);
+          return dist <= 14;
+        });
+
+        if (clickedDev) {
+          openDeviceModal(clickedDev);
+        }
+      });
+
+      function openDeviceModal(dev) {
+        STATE.selectedDeviceId = dev.id;
+        DOM.modalIp.textContent = dev.ip;
+        DOM.modalSubnet.textContent = dev.subnet;
+        DOM.modalMac.textContent = dev.mac;
+
+        if (dev.status === "RED") {
+          DOM.modalStatus.textContent = "THREAT DETECTED (RED)";
+          DOM.modalStatus.className = "font-bold text-rose-400";
+          DOM.modalIconBg.className =
+            "w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white bg-rose-500 shadow-lg shadow-rose-500/30";
+          DOM.modalIcon.className = "fa-solid fa-triangle-exclamation";
+          DOM.modalScoreBar.className =
+            "h-full bg-rose-500 transition-all duration-300";
+        } else if (dev.status === "BLOCKED") {
+          DOM.modalStatus.textContent = "PURGED / ISOLATED";
+          DOM.modalStatus.className = "font-bold text-gray-400";
+          DOM.modalIconBg.className =
+            "w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white bg-gray-700";
+          DOM.modalIcon.className = "fa-solid fa-ban";
+          DOM.modalScoreBar.className =
+            "h-full bg-gray-600 transition-all duration-300";
+        } else {
+          DOM.modalStatus.textContent = "VALID (GREEN)";
+          DOM.modalStatus.className = "font-bold text-emerald-400";
+          DOM.modalIconBg.className =
+            "w-12 h-12 rounded-xl flex items-center justify-center text-xl text-white bg-emerald-500 shadow-lg shadow-emerald-500/30";
+          DOM.modalIcon.className = "fa-solid fa-circle-check";
+          DOM.modalScoreBar.className =
+            "h-full bg-emerald-500 transition-all duration-300";
+        }
+
+        DOM.modalScoreText.textContent = `${dev.threatScore} / 100`;
+        DOM.modalScoreBar.style.width = `${dev.threatScore}%`;
+
+        if (dev.triggers && dev.triggers.length > 0) {
+          DOM.modalTriggers.innerHTML = dev.triggers
+            .map(
+              (t) =>
+                `<div class="text-rose-300 font-semibold mb-1">• ${t}</div>`,
+            )
+            .join("");
+        } else {
+          DOM.modalTriggers.innerHTML =
+            '<span class="text-gray-500">No security rule violations recorded.</span>';
+        }
+
+        DOM.modalBlockBtn.style.display =
+          dev.status === "BLOCKED" ? "none" : "inline-flex";
+        DOM.deviceModal.classList.remove("hidden");
+      }
+
+      function closeDeviceModal() {
+        DOM.deviceModal.classList.add("hidden");
+        STATE.selectedDeviceId = null;
+      }
+
+      function manualBlockFromModal() {
+        if (!STATE.selectedDeviceId) return;
+        blockDeviceById(STATE.selectedDeviceId, "Manual Admin Disconnect");
+        closeDeviceModal();
+      }
+
+      function blockDeviceById(devId, reason = "Auto-Purge Sweep") {
+        const dev = STATE.devices.find((d) => d.id === devId);
+        if (!dev || dev.status === "BLOCKED") return;
+
+        dev.status = "BLOCKED";
+        addAuditLog(
+          "ACTION_BLOCK_IP",
+          dev.ip,
+          `Device ${dev.ip} quarantined & isolated. Reason: ${reason}`,
+          "HIGH",
+        );
+        updateMetrics();
+      }
+
+      function run10SecondAutoPurgeSweep() {
+        let purgedCount = 0;
+        STATE.devices.forEach((dev) => {
+          if (dev.status === "RED") {
+            blockDeviceById(dev.id, "10s Auto-Sweep Threat Policy");
+            purgedCount++;
+          }
+        });
+
+        if (purgedCount > 0) {
+          DOM.canvasStatus.textContent = `Auto-Purge Action: ${purgedCount} Red devices dropped.`;
+        } else {
+          DOM.canvasStatus.textContent =
+            "Auto-Purge Sweep: All connected hosts clear.";
+        }
+      }
+
+      function initAutoPurgeTimer() {
+        setInterval(() => {
+          if (!STATE.autoPurge) return;
+
+          STATE.timerSeconds -= 0.1;
+          if (STATE.timerSeconds <= 0) {
+            STATE.timerSeconds = STATE.timerMax;
+            run10SecondAutoPurgeSweep();
+          }
+
+          const percentage = (STATE.timerSeconds / STATE.timerMax) * 100;
+          DOM.timerBar.style.width = `${percentage}%`;
+          DOM.timerText.textContent = `${STATE.timerSeconds.toFixed(1)}s`;
+        }, 100);
+      }
+
+      DOM.autopurgeToggle.addEventListener("change", (e) => {
+        STATE.autoPurge = e.target.checked;
+        if (!STATE.autoPurge) {
+          DOM.timerText.textContent = "PAUSED";
+          DOM.timerBar.style.width = "100%";
+        } else {
+          STATE.timerSeconds = STATE.timerMax;
+        }
+      });
+
+      function injectAttack(type) {
+        let host = STATE.devices.find((d) => d.status === "GREEN");
+        if (!host) {
+          host = addValidDevice();
+        }
+
+        if (type === "PORT_SCAN") {
+          host.threatScore = 88;
+          host.status = "RED";
+          host.triggers = [
+            "L4 Port Scan: >20 unique destination TCP probes in 10s",
+          ];
+          STATE.threatCounts.PORT_SCAN++;
+          addAuditLog(
+            "ATTACK_PORT_SCAN",
+            host.ip,
+            `Port Scan flood detected from ${host.ip} across 24 TCP ports!`,
+            "CRITICAL",
+          );
+        } else if (type === "BRUTE_FORCE") {
+          host.threatScore = 95;
+          host.status = "RED";
+          host.triggers = [
+            "L7 Auth Failure Velocity: >6 SSH failed logins/sec",
+          ];
+          STATE.threatCounts.BRUTE_FORCE++;
+          addAuditLog(
+            "ATTACK_BRUTE_FORCE",
+            host.ip,
+            `SSH Brute-force flooding detected from ${host.ip} (root login failures).`,
+            "CRITICAL",
+          );
+        } else if (type === "ML_ANOMALY") {
+          host.threatScore = 78;
+          host.status = "RED";
+          host.triggers = [
+            "ML Isolation Forest: Outbound data exfiltration on non-standard port 8888",
+          ];
+          STATE.threatCounts.ML_ANOMALY++;
+          addAuditLog(
+            "ATTACK_ML_ANOMALY",
+            host.ip,
+            `Isolation Forest flagged anomalous high-volume NetFlow on ${host.ip}:8888`,
+            "HIGH",
+          );
+        }
+
+        updateMetrics();
+        DOM.canvasStatus.textContent = `ALERT: Threat injected on ${host.ip}! Node turned RED.`;
+      }
+
+      function addValidDevice() {
+        const sub =
+          STATE.subnets[Math.floor(Math.random() * STATE.subnets.length)];
+        const hostNum = Math.floor(Math.random() * 200) + 10;
+        const ip = `10.20.${STATE.subnets.indexOf(sub) + 1}.${hostNum}`;
+
+        const newDev = {
+          id: "dev-" + Date.now(),
+          ip: ip,
+          mac: `00:1A:2B:${Math.floor(Math.random() * 89 + 10)}:${Math.floor(Math.random() * 89 + 10)}:${Math.floor(Math.random() * 89 + 10)}`,
+          subnet: sub.name,
+          threatScore: Math.floor(Math.random() * 15),
+          status: "GREEN",
+          triggers: [],
+        };
+
+        STATE.devices.push(newDev);
+        addAuditLog(
+          "HOST_CONNECTED",
+          ip,
+          `New valid host joined ${sub.name}. Safe baseline verified.`,
+          "LOW",
+        );
+        updateMetrics();
+        return newDev;
+      }
+
+      function triggerManualSweep() {
+        run10SecondAutoPurgeSweep();
+        STATE.timerSeconds = STATE.timerMax;
+      }
+
+      function resetBaseline() {
+        initInitialDevices();
+        STATE.threatCounts = { PORT_SCAN: 0, BRUTE_FORCE: 0, ML_ANOMALY: 0 };
+        addAuditLog(
+          "SYSTEM_RESET",
+          "10.20.0.1",
+          "Network baseline reset to clean default state.",
+          "LOW",
+        );
+        DOM.canvasStatus.textContent = "Baseline reset successful.";
+      }
+
+      function updateMetrics() {
+        const total = STATE.devices.length;
+        const valid = STATE.devices.filter((d) => d.status === "GREEN").length;
+        const threat = STATE.devices.filter((d) => d.status === "RED").length;
+        const blocked = STATE.devices.filter(
+          (d) => d.status === "BLOCKED",
+        ).length;
+
+        DOM.statTotal.textContent = total;
+        DOM.statValid.textContent = valid;
+        DOM.statThreat.textContent = threat;
+        DOM.statBlocked.textContent = blocked;
+
+        updateCharts();
+      }
+
+      window.onload = function () {
+        resizeCanvas();
+        window.addEventListener("resize", resizeCanvas);
+
+        initCharts();
+        initInitialDevices();
+        drawTopology();
+        initAutoPurgeTimer();
+
+        setInterval(updateCharts, 1500);
+      };
+    </script>
+  </body>
+</html>
